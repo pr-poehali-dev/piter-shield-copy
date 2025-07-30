@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import Icon from '@/components/ui/icon';
 
 interface CartItem {
@@ -17,6 +18,7 @@ const Index = () => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Все');
+  const [isCartOpen, setIsCartOpen] = useState(false);
 
   const addToCart = (product: any, size: string) => {
     const existingItem = cartItems.find(item => item.id === product.id && item.size === size);
@@ -34,6 +36,22 @@ const Index = () => {
         size,
         quantity: 1
       }]);
+    }
+  };
+
+  const removeFromCart = (itemId: string, size: string) => {
+    setCartItems(cartItems.filter(item => !(item.id === itemId && item.size === size)));
+  };
+
+  const updateQuantity = (itemId: string, size: string, newQuantity: number) => {
+    if (newQuantity <= 0) {
+      removeFromCart(itemId, size);
+    } else {
+      setCartItems(cartItems.map(item => 
+        item.id === itemId && item.size === size 
+          ? { ...item, quantity: newQuantity }
+          : item
+      ));
     }
   };
 
@@ -131,15 +149,81 @@ const Index = () => {
                 />
               </div>
               
-              <Button variant="outline" size="sm" className="relative border-foreground">
-                <Icon name="ShoppingBag" size={16} />
-                <span className="ml-2">Корзина</span>
-                {totalItems > 0 && (
-                  <Badge variant="destructive" className="absolute -top-2 -right-2 w-5 h-5 rounded-full p-0 flex items-center justify-center text-xs bg-foreground text-background">
-                    {totalItems}
-                  </Badge>
-                )}
-              </Button>
+              <Dialog open={isCartOpen} onOpenChange={setIsCartOpen}>
+                <DialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="relative border-foreground">
+                    <Icon name="ShoppingBag" size={16} />
+                    <span className="ml-2">Корзина</span>
+                    {totalItems > 0 && (
+                      <Badge variant="destructive" className="absolute -top-2 -right-2 w-5 h-5 rounded-full p-0 flex items-center justify-center text-xs bg-foreground text-background">
+                        {totalItems}
+                      </Badge>
+                    )}
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Корзина покупок</DialogTitle>
+                  </DialogHeader>
+                  <div className="max-h-96 overflow-y-auto">
+                    {cartItems.length === 0 ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <Icon name="ShoppingBag" size={48} className="mx-auto mb-4 opacity-50" />
+                        <p>Корзина пуста</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        {cartItems.map((item, index) => (
+                          <div key={`${item.id}-${item.size}-${index}`} className="flex items-center space-x-3 p-3 border border-foreground/20 rounded">
+                            <div className="flex-1">
+                              <h4 className="font-medium text-sm">{item.name}</h4>
+                              <p className="text-xs text-muted-foreground">Размер: {item.size}</p>
+                              <p className="text-sm font-bold">{item.price.toLocaleString()} ₽</p>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-8 h-8 p-0"
+                                onClick={() => updateQuantity(item.id, item.size, item.quantity - 1)}
+                              >
+                                <Icon name="Minus" size={12} />
+                              </Button>
+                              <span className="w-8 text-center text-sm">{item.quantity}</span>
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="w-8 h-8 p-0"
+                                onClick={() => updateQuantity(item.id, item.size, item.quantity + 1)}
+                              >
+                                <Icon name="Plus" size={12} />
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                className="w-8 h-8 p-0 text-destructive"
+                                onClick={() => removeFromCart(item.id, item.size)}
+                              >
+                                <Icon name="Trash2" size={12} />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                        <div className="border-t pt-4">
+                          <div className="flex justify-between items-center mb-4">
+                            <span className="font-medium">Итого:</span>
+                            <span className="font-bold text-lg">{totalPrice.toLocaleString()} ₽</span>
+                          </div>
+                          <Button className="w-full bg-foreground hover:bg-muted-foreground" onClick={() => setIsCartOpen(false)}>
+                            Оформить заказ
+                            <Icon name="ArrowRight" size={16} className="ml-2" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           </div>
         </div>
